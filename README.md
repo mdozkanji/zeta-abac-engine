@@ -61,7 +61,7 @@ for a running log of what was built, what was learned, and what's next.
 ## Getting started (dev setup)
 
 ```bash
-git clone <repo-url>
+git clone [<repo-url>](https://github.com/mdozkanji/zeta-abac-engine)
 cd zeta-abac-engine
 npm install
 npx hardhat compile
