@@ -90,7 +90,7 @@ Running log of what was built, what was learned, and what's next — updated eve
   Week 1 schema exactly. `onlyOwner`-gated writes (deliberate Week 2 placeholder — Week 3
   swaps this for `GovernanceVoting`'s k-of-n approval), custom errors for gas efficiency,
   events for off-chain PDP cache sync, and revert-on-missing (not zeroed-default) reads.
-- `test/AttributeRegistry.test.ts`: 8 unit tests covering write/read round-trips, event
+- `test/AttributeRegistry.test.ts`: 9 unit tests covering write/read round-trips, event
   emission, owner-gating, input validation (clearance/classification/trust-score bounds), and
   the revert-on-unregistered-attribute behavior.
 - Installed `@openzeppelin/contracts@^4.9.0` for the audited `Ownable` implementation rather
