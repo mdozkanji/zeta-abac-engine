@@ -1,0 +1,26 @@
+{
+  "name": "zeta-abac-engine",
+  "version": "1.0.0",
+  "description": "Blockchain-governed ABAC policy engine for zero-trust access control",
+  "main": "index.js",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test"
+  },
+  "keywords": [
+    "zero-trust",
+    "abac",
+    "access-control",
+    "blockchain",
+    "solidity"
+  ],
+  "author": "Mofeed Dozkanji",
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@types/node": "^26.2.0",
+    "hardhat": "^2.29.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}

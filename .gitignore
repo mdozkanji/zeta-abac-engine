@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Hardhat
+artifacts/
+cache/
+typechain-types/
+
+# Env / secrets — NEVER commit real keys
+.env
+.env.local
+
+# Build output
+dist/
+
+# OS/editor noise
+.DS_Store
+*.log
+.vscode/
