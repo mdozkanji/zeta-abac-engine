@@ -40,3 +40,40 @@ Running log of what was built, what was learned, and what's next — updated eve
 - Formally define the attribute schema (subject/resource/environment categories).
 - Design the JSON policy rule format.
 - Write 5–10 example policies by hand before writing any contract code.
+
+---
+
+## Week 1 — ABAC Model & Policy Rule Design (2026-08-20)
+
+### Built
+- `docs/abac-model.md`: full attribute schema (subject/resource/environment/action) for the
+  document-vault demo scenario, a JSON policy rule format supporting comparisons, boolean
+  and/or logic, and cross-attribute references (e.g.
+  `resource.classification <= subject.clearance`).
+- 9 hand-written example policies covering clearance gating, department isolation, role-based
+  overrides, context-based restrictions (working hours, network), and hard admin-only gates.
+- Explicit **deny-overrides** combining algorithm decision, with rationale — this becomes a
+  directly testable property in Week 6.
+
+### Learned
+- Attribute schemas are expensive to change after they're encoded into contract storage —
+  worth the up-front "paper" design pass NIST SP 800-162 recommends, rather than discovering
+  gaps mid-contract-write.
+- A combining algorithm (deny-overrides vs. permit-overrides) has to be an explicit, written
+  decision — without it, allow and deny rules can silently contradict each other.
+- Found (and deliberately deferred) a genuine open design question: does the full rule *set*
+  need on-chain governance the same way attribute *values* do, or is that overkill? Carried
+  into Week 2 rather than guessed at.
+
+### Fixed
+- Week 0's `mkdir -p .../{contracts,test,scripts,docs}` silently failed to brace-expand and
+  created one bogus literal directory instead of four real ones. `contracts/`, `test/`, and
+  `scripts/` didn't actually exist until this session — caught and fixed before it caused
+  problems in Week 2.
+
+### Next (Week 2)
+- Write `AttributeRegistry.sol`: on-chain storage for subject/resource attributes defined in
+  `docs/abac-model.md`, with events emitted on change.
+- Unit tests in Hardhat for attribute get/set behavior.
+- Resolve the open question above (on-chain rule storage vs. off-chain + hash) before writing
+  the contract, since it affects the storage layout.

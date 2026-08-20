@@ -32,7 +32,7 @@ Client App → PEP (middleware) → PDP (this service) → Smart Contracts (attr
 
 Full details: [`docs/architecture.md`](docs/architecture.md)
 Threat model: [`docs/threat-model.md`](docs/threat-model.md)
-ABAC model & policy format: [`docs/abac-model.md`](docs/abac-model.md) *(Week 1)*
+ABAC model & policy format: [`docs/abac-model.md`](docs/abac-model.md)
 
 ## Tech stack
 
