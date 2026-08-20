@@ -14,6 +14,13 @@ attribute or policy change; the change only executes once **k of n** governors h
 it. This is the mechanism that removes the single-admin trust bottleneck — compromising one
 governor's key is not sufficient to alter access policy.
 
+### PolicyRegistry (smart contract, arriving Week 3)
+Stores a hash + URI pointer for the currently active off-chain policy rule set (see
+`docs/abac-model.md` §6 for the full rationale). Updating the active policy requires the same
+k-of-n governance approval as attribute mutation — the rules live off-chain for gas-cost
+reasons, but *changing which rules are active* is still subject to the project's core
+no-single-party-control property.
+
 ### AuditAnchor (smart contract)
 The PDP logs every access decision off-chain (for cost and speed), then periodically writes a
 cryptographic hash of the accumulated log to this contract. Anyone can later verify that the

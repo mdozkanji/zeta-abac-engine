@@ -50,7 +50,7 @@ for a running log of what was built, what was learned, and what's next.
 |---|---|
 | 0 | Repo scaffold, environment setup, architecture & threat model docs |
 | 1 | Formal ABAC model & policy rule design |
-| 2 | Attribute registry smart contract + unit tests |
+| 2 | ✅ Attribute registry smart contract + unit tests |
 | 3 | k-of-n governance voting contract |
 | 4 | Security hardening + Sepolia testnet deployment |
 | 5 | PDP service skeleton + on-chain attribute sync |

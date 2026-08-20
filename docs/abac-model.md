@@ -217,12 +217,26 @@ have unit tests asserting deny-overrides behavior explicitly (e.g., Rule 3 alone
 a manager to read a top-secret document outside working hours, but Rule 4's deny must still
 win).
 
-## 6. Open questions carried into Week 2
+## 6. Policy storage decision (resolved, Week 2)
 
-- Should the full policy set live entirely on-chain (as contract storage), or should the
-  chain store only a hash/pointer to an off-chain policy document, with governance voting on
-  *changes* to that hash? (Leaning toward the latter for gas-cost reasons — worth revisiting
-  once we're writing `AttributeRegistry.sol`.)
-- Attribute *values* (like `subject.clearance`) clearly belong on-chain per the project's
-  core thesis. Whether the *rule set itself* needs the same on-chain governance treatment, or
-  can be simpler, is a genuine design question, not yet settled.
+**Decision: off-chain rule set + on-chain hash anchor.** The full JSON policy document (the
+rule format defined above) is stored off-chain, exactly as designed in §3–4, with zero
+translation needed. The on-chain `PolicyRegistry` contract (built alongside `GovernanceVoting`
+in Week 3) stores only:
+- `bytes32 policyHash` — the current rule set's hash
+- `string policyURI` — a pointer to where the current rule set can be fetched (e.g. IPFS or a
+  governance-controlled endpoint)
+- a version number, bumped on every change
+
+Updating `policyHash`/`policyURI` requires the same k-of-n governance approval as attribute
+mutation (Week 3) — so while the rules themselves live off-chain, **changing which rules are
+active still can't be done unilaterally**, preserving the project's core property.
+
+**Rationale:** attribute *values* change frequently (a subject's clearance, a device's trust
+score) and are simple scalar/enum types — cheap and natural to store directly on-chain, which
+is why `AttributeRegistry.sol` (this week) stores them directly. The policy *rule set* is
+richer (nested boolean logic, cross-attribute references) and changes far less often —
+storing it as a hash keeps gas costs sane while still making tampering detectable, which is
+the property that actually matters here, not on-chain queryability of the rules themselves.
+Anyone who wants to *verify* the active policy can fetch it from `policyURI` and check it
+against `policyHash` — auditable without being expensive.

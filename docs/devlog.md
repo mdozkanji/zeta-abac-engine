@@ -77,3 +77,44 @@ Running log of what was built, what was learned, and what's next — updated eve
 - Unit tests in Hardhat for attribute get/set behavior.
 - Resolve the open question above (on-chain rule storage vs. off-chain + hash) before writing
   the contract, since it affects the storage layout.
+
+---
+
+## Week 2 — Attribute Registry Contract (2026-08-20)
+
+### Built
+- Resolved the Week 1 open question: **off-chain policy rules + on-chain hash anchor**
+  (`docs/abac-model.md` §6, `docs/architecture.md` updated with a new `PolicyRegistry`
+  component, arriving Week 3 alongside governance).
+- `contracts/AttributeRegistry.sol`: on-chain subject/resource attribute storage matching the
+  Week 1 schema exactly. `onlyOwner`-gated writes (deliberate Week 2 placeholder — Week 3
+  swaps this for `GovernanceVoting`'s k-of-n approval), custom errors for gas efficiency,
+  events for off-chain PDP cache sync, and revert-on-missing (not zeroed-default) reads.
+- `test/AttributeRegistry.test.ts`: 8 unit tests covering write/read round-trips, event
+  emission, owner-gating, input validation (clearance/classification/trust-score bounds), and
+  the revert-on-unregistered-attribute behavior.
+- Installed `@openzeppelin/contracts@^4.9.0` for the audited `Ownable` implementation rather
+  than hand-rolling access control.
+
+### Learned
+- The on-chain/off-chain storage split from `docs/architecture.md` isn't just a diagram —
+  writing the actual contract makes concrete *why* attribute values (simple, frequent writes)
+  and policy rules (complex, infrequent writes) warrant different storage strategies.
+- Custom Solidity errors (`error ClearanceOutOfRange(uint8)` + `revert
+  ClearanceOutOfRange(x)`) vs. `require(cond, "string")` — the modern, gas-cheaper pattern
+  since Solidity 0.8.4.
+- Design habit: build the *real* interface (function signatures, events, validation) now, and
+  isolate the *not-yet-correct* part (owner-only access) behind a clear doc comment rather
+  than waiting for governance to exist before writing anything. Each week stays independently
+  testable this way.
+- **Environment constraint hit:** the sandbox this project is built in has an outbound
+  network allowlist that doesn't include `binaries.soliditylang.org` (where Hardhat fetches
+  the Solidity compiler), so contracts are written and reasoned about here but compiled/tested
+  on the developer's own machine, which has normal network access.
+
+### Next (Week 3)
+- `GovernanceVoting.sol`: propose → vote → execute pattern, k-of-n approval threshold.
+- Wire `AttributeRegistry` to require governance approval instead of `onlyOwner`.
+- `PolicyRegistry.sol`: hash + URI anchor for the off-chain policy rule set, same governance
+  gating.
+- Adversarial tests: a single governor acting alone must never succeed in forcing a change.
