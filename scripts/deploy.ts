@@ -76,12 +76,27 @@ async function main() {
   if (!fs.existsSync(outDir)) fs.mkdirSync(outDir);
   fs.writeFileSync(path.join(outDir, "sepolia.json"), JSON.stringify(deployment, null, 2));
 
+  // GovernanceVoting's constructor takes an array (initialGovernors) — passing arrays as
+  // inline shell arguments to `hardhat verify` is unreliable (the CLI's argument parser
+  // doesn't consistently handle array-typed constructor args, even with careful quoting).
+  // The documented workaround is a small JS file exporting the exact constructor args as a
+  // real array, passed via --constructor-args instead of inline. Writing it here means the
+  // args are always exactly correct (generated from the same variables used to deploy),
+  // rather than retyped by hand later.
+  const governanceArgsPath = path.join(outDir, "sepolia-governance-args.js");
+  fs.writeFileSync(
+    governanceArgsPath,
+    `module.exports = [\n  ${JSON.stringify(governorAddresses)},\n  ${THRESHOLD}\n];\n`
+  );
+
   console.log("\nDeployment info written to deployments/sepolia.json");
+  console.log(`Governance constructor args written to deployments/sepolia-governance-args.js`);
   console.log("\nNext: verify each contract on Etherscan with:\n");
   console.log(
-    `npx hardhat verify --network sepolia ${governanceAddress} '[${governorAddresses
-      .map((a) => `"${a}"`)
-      .join(",")}]' ${THRESHOLD}`
+    `npx hardhat verify --network sepolia --constructor-args ${path.relative(
+      process.cwd(),
+      governanceArgsPath
+    )} ${governanceAddress}`
   );
   console.log(`npx hardhat verify --network sepolia ${registryAddress} ${governanceAddress}`);
   console.log(

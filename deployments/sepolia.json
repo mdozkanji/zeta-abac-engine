@@ -1,0 +1,30 @@
+{
+  "network": "sepolia",
+  "deployedAt": "2026-08-20",
+  "deployer": "0x1277BB626e87f54e0C5Cd5B7FFAEd6C38DCe5f78",
+  "governors": [
+    "0x939e559C61b4c404011Ee9ae74029354F11A6Dce",
+    "0x94f7f351F5A69ef283cBe0dC102eC3Cb43A87381",
+    "0xB3d8cbf8232C19380521d45Ae129B6CE0633081C"
+  ],
+  "threshold": 2,
+  "contracts": {
+    "GovernanceVoting": "0xf6cc22ce616CFeEc90BBbEcD0C78B3025ee98ABa",
+    "AttributeRegistry": "0x4004A83f8963B5943D08FE7FC4C3E550973C6362",
+    "PolicyRegistry": "0x019BFB227c1c22A1ed44E5e7c597E46BfdFf0965"
+  },
+  "initialPolicy": {
+    "hash": "0xbaca74f3735218aba46a4bd75d92e46b3721b59ec0557165bed569f83ffbd182",
+    "uri": "ipfs://placeholder-week1-policy-set"
+  },
+  "etherscan": {
+    "GovernanceVoting": "https://sepolia.etherscan.io/address/0xf6cc22ce616CFeEc90BBbEcD0C78B3025ee98ABa",
+    "AttributeRegistry": "https://sepolia.etherscan.io/address/0x4004A83f8963B5943D08FE7FC4C3E550973C6362#code",
+    "PolicyRegistry": "https://sepolia.etherscan.io/address/0x019BFB227c1c22A1ed44E5e7c597E46BfdFf0965#code"
+  },
+  "verified": {
+    "GovernanceVoting": false,
+    "AttributeRegistry": true,
+    "PolicyRegistry": true
+  }
+}

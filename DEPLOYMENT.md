@@ -91,6 +91,18 @@ a portfolio project, not just a "nice to have."
 You'll need an `ETHERSCAN_API_KEY` in `.env` for this — get one free at
 [etherscan.io/apis](https://etherscan.io/apis).
 
+**Note on `GovernanceVoting`'s verify command specifically**: its constructor takes an array
+argument (`initialGovernors`), and passing arrays as inline shell arguments to `hardhat
+verify` is unreliable — the CLI's argument parser doesn't consistently handle array-typed
+constructor args correctly, even with careful quoting (it can fail with something like
+`Value [...] cannot be encoded for the parameter initialGovernors` / `expected array value`).
+The deploy script works around this automatically: it writes
+`deployments/sepolia-governance-args.js` (a small file exporting the real constructor args as
+an actual JS array) and prints a verify command using `--constructor-args <file>` instead of
+inline arguments. `AttributeRegistry` and `PolicyRegistry` don't have this issue since their
+constructor arguments are all scalars (addresses, a hash, a string) — only array-typed
+arguments need this workaround.
+
 ## What this deployment does *not* yet do
 
 Deploying the contracts doesn't exercise the governance flow itself — no proposals have been

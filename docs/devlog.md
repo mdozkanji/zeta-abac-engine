@@ -283,3 +283,44 @@ Slither ran cleanly, found exactly 3 results:
 ### Next
 - Actual Sepolia deployment (wallet funding, `scripts/deploy.ts`, Etherscan verification) —
   the one remaining piece of Week 4.
+
+---
+
+## Week 4 — Complete: Live on Sepolia (2026-08-20)
+
+### Deployed
+All three contracts live on Sepolia:
+- `GovernanceVoting`: `0xf6cc22ce616CFeEc90BBbEcD0C78B3025ee98ABa` (3 governors, k=2)
+- `AttributeRegistry`: `0x4004A83f8963B5943D08FE7FC4C3E550973C6362`
+- `PolicyRegistry`: `0x019BFB227c1c22A1ed44E5e7c597E46BfdFf0965`
+
+`AttributeRegistry` and `PolicyRegistry` verified on Etherscan on the first attempt.
+`GovernanceVoting` hit a real, well-documented tooling limitation.
+
+### Fixed
+- **`hardhat-verify` doesn't reliably parse array-typed constructor arguments passed inline
+  on the shell**, even with careful quoting — failed with `Value [...] cannot be encoded for
+  the parameter initialGovernors` / `expected array value`. This only affected
+  `GovernanceVoting` (its constructor takes `address[] initialGovernors`); `AttributeRegistry`
+  and `PolicyRegistry` have only scalar constructor args and verified cleanly first try.
+  **Fix**: pass array-containing constructor args via a small `.js` file (`module.exports =
+  [...]`) and `hardhat verify --constructor-args <file>` instead of inline arguments.
+  `scripts/deploy.ts` now auto-generates this file at deploy time from the same variables used
+  to actually deploy, so future deployments won't hit this manually.
+- Recorded the real deployed addresses in `deployments/sepolia.json` and linked them in
+  `README.md` — this is genuinely portfolio content now, not just internal bookkeeping: a
+  live, verifiable, deployed instance of the thesis architecture.
+
+### Learned
+- Not every deployment failure is a bug in the contract or a misunderstanding of Solidity —
+  some are just CLI tooling limitations with specific argument types. Worth recognizing the
+  difference quickly (the error message here was actually fairly explicit about what it
+  didn't like) rather than assuming a deployment problem means a design problem.
+- Generating deployment-time artifacts (like the constructor-args file) automatically, from
+  the same source of truth used for the actual deployment, avoids an entire class of
+  transcription bugs that come from manually retyping addresses/args later.
+
+### Week 4 — closed out. Next: Week 5
+- PDP service skeleton (Node/TypeScript).
+- On-chain attribute sync via ethers.js, listening to `AttributeRegistry`'s events.
+- Redis-backed attribute cache.

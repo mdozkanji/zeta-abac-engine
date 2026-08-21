@@ -36,6 +36,16 @@ ABAC model & policy format: [`docs/abac-model.md`](docs/abac-model.md)
 Security review (Slither + gas reporting): [`docs/security-review.md`](docs/security-review.md)
 Sepolia deployment guide: [`DEPLOYMENT.md`](DEPLOYMENT.md)
 
+## Live deployment (Sepolia testnet)
+
+| Contract | Address | Etherscan |
+|---|---|---|
+| `GovernanceVoting` | `0xf6cc22ce616CFeEc90BBbEcD0C78B3025ee98ABa` | [verify pending](https://sepolia.etherscan.io/address/0xf6cc22ce616CFeEc90BBbEcD0C78B3025ee98ABa) |
+| `AttributeRegistry` | `0x4004A83f8963B5943D08FE7FC4C3E550973C6362` | [verified ✅](https://sepolia.etherscan.io/address/0x4004A83f8963B5943D08FE7FC4C3E550973C6362#code) |
+| `PolicyRegistry` | `0x019BFB227c1c22A1ed44E5e7c597E46BfdFf0965` | [verified ✅](https://sepolia.etherscan.io/address/0x019BFB227c1c22A1ed44E5e7c597E46BfdFf0965#code) |
+
+Governor set: 3 addresses, threshold k=2 (see `deployments/sepolia.json` for full details).
+
 ## Tech stack
 
 - **Smart contracts:** Solidity 0.8.24, Hardhat 2.x (deliberately pinned — see dev notes)
@@ -54,7 +64,7 @@ for a running log of what was built, what was learned, and what's next.
 | 1 | Formal ABAC model & policy rule design |
 | 2 | ✅ Attribute registry smart contract + unit tests |
 | 3 | ✅ k-of-n governance voting contract |
-| 4 | 🔄 Security hardening + Sepolia testnet deployment |
+| 4 | ✅ Security hardening + Sepolia testnet deployment |
 | 5 | PDP service skeleton + on-chain attribute sync |
 | 6 | Policy evaluation engine + tamper-evident audit log |
 | 7 | PEP middleware + end-to-end demo app |
