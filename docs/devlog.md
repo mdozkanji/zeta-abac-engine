@@ -214,3 +214,40 @@ Running log of what was built, what was learned, and what's next — updated eve
 - Run the gas report, note any surprisingly expensive operations.
 - Actually deploy to Sepolia and verify on Etherscan.
 - Once deployment is confirmed: Week 5 — PDP service skeleton, on-chain attribute sync.
+
+---
+
+## Week 4 (cont.) — First Real Slither Run (2026-08-20)
+
+### Results
+Slither ran cleanly, found exactly 3 results:
+1. **`reentrancy-events`** in `GovernanceVoting.execute()` — event emitted after the external
+   call. **Fixed**: moved `emit ProposalExecuted(...)` before `p.target.call(p.data)`. Safe
+   because a failed call reverts the whole transaction anyway.
+2. **`costly-loop`** in `removeGovernor()`'s swap-and-pop. **Accepted, documented in-code**:
+   governor sets are expected to stay small; O(n) is negligible at that scale.
+3. **`low-level-calls`** on `execute()`'s arbitrary `target.call(data)`. **Accepted by
+   design** — and correctly predicted before running Slither at all, in last session's
+   `docs/security-review.md` write-up.
+
+### Fixed
+- Unrelated environment glitch: `dotenv` v17's default stdout "tip" logging broke Hardhat's
+  JSON output that `crytic-compile` (Slither's Hardhat integration) expects to parse cleanly,
+  producing `Problem deserializing hardhat configuration, using defaults`. Fixed with
+  `dotenv.config({ quiet: true })`.
+
+### Learned
+- Predicting a finding correctly *before* running the tool (the `low-level-calls` case) is a
+  genuinely useful signal that the design's security reasoning holds up under automated
+  review, not just our own read of the code.
+- A realistic ratio for a first Slither pass on a reasonably careful codebase: fix what's
+  cheaply and safely fixable, consciously document-and-accept what isn't worth the added
+  complexity, and never silently ignore a finding either way.
+- "Deserializing configuration" errors from tools that shell out to other tools and parse
+  their stdout are often caused by an unrelated third tool printing unexpected banner/log
+  text into that stream — worth checking for that class of cause before assuming your own
+  config is malformed.
+
+### Next
+- Gas report (`REPORT_GAS=true npx hardhat test`).
+- Actual Sepolia deployment + Etherscan verification.

@@ -159,10 +159,15 @@ contract GovernanceVoting {
         // known, non-malicious contract in this project's threat model.
         p.executed = true;
 
+        // Emit before the external call, not after — Slither's reentrancy-events detector
+        // flags event-after-call as a pattern that can confuse off-chain observers about
+        // execution order during a reentrant call. Safe to move earlier: if p.target.call
+        // below fails, the whole transaction reverts, unwinding this emit along with
+        // everything else, so no event is ever recorded for a failed execution either way.
+        emit ProposalExecuted(proposalId, msg.sender);
+
         (bool success, ) = p.target.call(p.data);
         if (!success) revert ExecutionFailed(proposalId);
-
-        emit ProposalExecuted(proposalId, msg.sender);
     }
 
     // --- Self-amending governor set ---
@@ -190,6 +195,11 @@ contract GovernanceVoting {
 
         // Swap-and-pop removal from the enumeration array — O(1) instead of shifting every
         // element, at the cost of not preserving insertion order (irrelevant here).
+        // Note: Slither's costly-loop detector flags the loop below since it contains a
+        // storage-mutating operation (.pop()). Accepted as-is: governor sets in this design
+        // are expected to stay small (single digits to low tens of addresses at most), so the
+        // O(n) scan cost is negligible in practice. Worth revisiting only if this contract
+        // were ever repurposed for a much larger governor set.
         uint256 len = governorList.length;
         for (uint256 i = 0; i < len; i++) {
             if (governorList[i] == governor) {
