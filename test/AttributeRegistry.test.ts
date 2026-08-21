@@ -5,34 +5,43 @@ import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 
 describe("AttributeRegistry", function () {
   let registry: AttributeRegistry;
-  let owner: SignerWithAddress;
+  let governance: SignerWithAddress; // stand-in EOA for a GovernanceVoting contract address —
+  // see test/Integration.test.ts for the real wired-together version. Testing this contract
+  // against a plain account first keeps these tests focused purely on AttributeRegistry's own
+  // logic, independent of GovernanceVoting's correctness.
   let alice: SignerWithAddress;
   let bob: SignerWithAddress;
 
-  // Role/Department/ResourceType enum indices — mirrors docs/abac-model.md §2 and the
-  // contract's enum declaration order. Keeping these as named constants (rather than bare
-  // numbers scattered through the tests) is the readability habit worth building now, before
-  // the test suite grows.
   const Role = { None: 0, Analyst: 1, Manager: 2, Auditor: 3, Admin: 4 };
   const Department = { None: 0, Engineering: 1, Legal: 2, Security: 3 };
   const ResourceType = { None: 0, Report: 1, Contract: 2, PersonnelRecord: 3 };
 
   beforeEach(async function () {
-    [owner, alice, bob] = await ethers.getSigners();
+    [governance, alice, bob] = await ethers.getSigners();
     const Registry = await ethers.getContractFactory("AttributeRegistry");
-    registry = (await Registry.deploy()) as unknown as AttributeRegistry;
+    registry = (await Registry.deploy(governance.address)) as unknown as AttributeRegistry;
     await registry.waitForDeployment();
   });
 
-  describe("setSubjectAttributes", function () {
-    it("allows the owner to set and retrieve subject attributes", async function () {
-      await registry.setSubjectAttributes(
-        alice.address,
-        Role.Analyst,
-        2, // clearance
-        Department.Engineering,
-        85 // deviceTrustScore
+  describe("constructor", function () {
+    it("rejects a zero address as the governance contract", async function () {
+      const Registry = await ethers.getContractFactory("AttributeRegistry");
+      await expect(Registry.deploy(ethers.ZeroAddress)).to.be.revertedWithCustomError(
+        Registry,
+        "ZeroGovernanceAddress"
       );
+    });
+
+    it("records the governance address immutably", async function () {
+      expect(await registry.governance()).to.equal(governance.address);
+    });
+  });
+
+  describe("setSubjectAttributes", function () {
+    it("allows the governance address to set and retrieve subject attributes", async function () {
+      await registry
+        .connect(governance)
+        .setSubjectAttributes(alice.address, Role.Analyst, 2, Department.Engineering, 85);
 
       const attrs = await registry.getSubjectAttributes(alice.address);
       expect(attrs.role).to.equal(Role.Analyst);
@@ -43,24 +52,34 @@ describe("AttributeRegistry", function () {
 
     it("emits SubjectAttributesSet on write", async function () {
       await expect(
-        registry.setSubjectAttributes(alice.address, Role.Manager, 3, Department.Legal, 90)
+        registry
+          .connect(governance)
+          .setSubjectAttributes(alice.address, Role.Manager, 3, Department.Legal, 90)
       )
         .to.emit(registry, "SubjectAttributesSet")
         .withArgs(alice.address, Role.Manager, 3, Department.Legal, 90);
     });
 
-    it("rejects a non-owner attempting to set attributes", async function () {
-      // This test exists specifically to be revisited in Week 3: once GovernanceVoting
-      // replaces onlyOwner, this assertion changes from "only the owner" to "only via an
-      // approved k-of-n governance proposal." Documenting that intent here so it isn't lost.
+    it("rejects a call from any address other than governance — including the deployer", async function () {
+      // This is the test that matters most this week: it's the direct, testable proof of
+      // "no single account has unilateral write access," which is the entire point of Week
+      // 3. Note this isn't testing "a random stranger can't write" (Week 2 already proved
+      // that via onlyOwner) — it's testing that NO plain EOA can, including whoever deployed
+      // the contract or would have been the "owner" under the old model.
       await expect(
-        registry.connect(alice).setSubjectAttributes(bob.address, Role.Analyst, 1, Department.None, 50)
-      ).to.be.revertedWith("Ownable: caller is not the owner");
+        registry
+          .connect(alice)
+          .setSubjectAttributes(bob.address, Role.Analyst, 1, Department.None, 50)
+      )
+        .to.be.revertedWithCustomError(registry, "NotGovernance")
+        .withArgs(alice.address);
     });
 
     it("rejects clearance values above the valid range (0-4)", async function () {
       await expect(
-        registry.setSubjectAttributes(alice.address, Role.Analyst, 5, Department.None, 50)
+        registry
+          .connect(governance)
+          .setSubjectAttributes(alice.address, Role.Analyst, 5, Department.None, 50)
       )
         .to.be.revertedWithCustomError(registry, "ClearanceOutOfRange")
         .withArgs(5);
@@ -68,7 +87,9 @@ describe("AttributeRegistry", function () {
 
     it("rejects device trust scores above 100", async function () {
       await expect(
-        registry.setSubjectAttributes(alice.address, Role.Analyst, 2, Department.None, 101)
+        registry
+          .connect(governance)
+          .setSubjectAttributes(alice.address, Role.Analyst, 2, Department.None, 101)
       )
         .to.be.revertedWithCustomError(registry, "TrustScoreOutOfRange")
         .withArgs(101);
@@ -78,13 +99,10 @@ describe("AttributeRegistry", function () {
   describe("setResourceAttributes", function () {
     const docId = ethers.keccak256(ethers.toUtf8Bytes("document-42"));
 
-    it("allows the owner to set and retrieve resource attributes", async function () {
-      await registry.setResourceAttributes(
-        docId,
-        4, // classification: top-secret
-        Department.Security,
-        ResourceType.Report
-      );
+    it("allows the governance address to set and retrieve resource attributes", async function () {
+      await registry
+        .connect(governance)
+        .setResourceAttributes(docId, 4, Department.Security, ResourceType.Report);
 
       const attrs = await registry.getResourceAttributes(docId);
       expect(attrs.classification).to.equal(4);
@@ -92,9 +110,21 @@ describe("AttributeRegistry", function () {
       expect(attrs.resourceType).to.equal(ResourceType.Report);
     });
 
+    it("rejects a call from a non-governance address", async function () {
+      await expect(
+        registry
+          .connect(alice)
+          .setResourceAttributes(docId, 2, Department.Engineering, ResourceType.Report)
+      )
+        .to.be.revertedWithCustomError(registry, "NotGovernance")
+        .withArgs(alice.address);
+    });
+
     it("rejects classification values above the valid range (0-4)", async function () {
       await expect(
-        registry.setResourceAttributes(docId, 5, Department.Security, ResourceType.Report)
+        registry
+          .connect(governance)
+          .setResourceAttributes(docId, 5, Department.Security, ResourceType.Report)
       )
         .to.be.revertedWithCustomError(registry, "ClassificationOutOfRange")
         .withArgs(5);
@@ -103,9 +133,6 @@ describe("AttributeRegistry", function () {
 
   describe("unregistered attribute lookups", function () {
     it("reverts (rather than returning zeroed defaults) for an unregistered subject", async function () {
-      // This is the specific behavior called out in the contract's doc comment: a missing
-      // subject must fail loudly, not silently resolve to "role: None, clearance: 0" — which
-      // could otherwise be misread as a legitimate low-privilege registered user.
       await expect(registry.getSubjectAttributes(bob.address))
         .to.be.revertedWithCustomError(registry, "SubjectNotFound")
         .withArgs(bob.address);

@@ -40,9 +40,18 @@ independent of transport security.
 ### 5. Malicious governor (within the k-of-n set) acting alone
 **Goal:** push through an unauthorized attribute/policy change.
 **Mitigation:** by construction, a single governor cannot execute a proposal — this is the
-core property GovernanceVoting is designed to guarantee. Will be directly tested with
-adversarial unit tests in Week 3 (a single-signer attempting to force execution should always
-fail).
+core property `GovernanceVoting` is designed to guarantee. Directly tested with adversarial
+unit tests in Week 3 (`test/GovernanceVoting.test.ts`, `test/Integration.test.ts`): a
+single-signer attempting to force execution always fails with `ThresholdNotMet`, and a
+governor calling `AttributeRegistry` directly (bypassing governance entirely) always fails
+with `NotGovernance`.
+
+**Open design question found during Week 3 testing:** the current implementation does not
+prevent a governor from voting on a proposal to remove *themselves* from the governor set.
+Real-world multisig systems vary on this — some disallow self-removal votes, others allow it
+since the remaining threshold check still provides a safety floor. Left as-is for now (the
+`CannotDropBelowThreshold` check still prevents the governor set from shrinking past `k`
+regardless of who votes), but flagged here rather than silently assumed correct.
 
 ### 6. Smart contract-specific attacks (reentrancy, integer issues, access-control bugs)
 **Goal:** exploit implementation bugs in the contracts themselves, independent of the

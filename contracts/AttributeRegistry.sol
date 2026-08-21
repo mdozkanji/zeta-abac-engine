@@ -1,18 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.24;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-
 /// @title AttributeRegistry
 /// @notice On-chain store for subject and resource attributes used by ZeTA's ABAC policy
 ///         engine. See docs/abac-model.md for the full attribute schema and rationale.
-/// @dev Week 2 scope: attribute storage + owner-gated mutation. The `onlyOwner` modifier here
-///      is a deliberate placeholder — Week 3 replaces single-owner control with the
-///      GovernanceVoting contract's k-of-n approval, which is the actual security property
-///      this project is built around. Building incrementally with a simple, honest
-///      placeholder (rather than a half-finished governance stub) keeps each week's contract
-///      independently testable.
-contract AttributeRegistry is Ownable {
+/// @dev Week 3: mutation is gated to a single immutable `governance` address, set at
+///      deployment to a GovernanceVoting contract's address. Only that contract can call
+///      setSubjectAttributes/setResourceAttributes — and it only does so as the result of an
+///      executed, k-of-n-approved proposal (see GovernanceVoting.sol). This replaces Week 2's
+///      `onlyOwner` placeholder with the actual security property this project is built
+///      around: no single account, including the original deployer, has unilateral write
+///      access.
+contract AttributeRegistry {
     // --- Enums (mirrors docs/abac-model.md §2) ---
 
     enum Role {
@@ -56,6 +55,12 @@ contract AttributeRegistry is Ownable {
 
     // --- Storage ---
 
+    /// @notice The only address permitted to mutate attributes — expected to be a deployed
+    /// GovernanceVoting contract. Immutable: set once at deployment, never changeable, which
+    /// is itself a deliberate security property (no upgrade path that could redirect
+    /// authority elsewhere without deploying an entirely new registry).
+    address public immutable governance;
+
     mapping(address => SubjectAttributes) private subjects;
     mapping(bytes32 => ResourceAttributes) private resources;
 
@@ -87,10 +92,20 @@ contract AttributeRegistry is Ownable {
     error TrustScoreOutOfRange(uint8 provided);
     error SubjectNotFound(address subject);
     error ResourceNotFound(bytes32 resourceId);
+    error NotGovernance(address caller);
+    error ZeroGovernanceAddress();
 
-    constructor() Ownable() {}
+    modifier onlyGovernance() {
+        if (msg.sender != governance) revert NotGovernance(msg.sender);
+        _;
+    }
 
-    // --- Mutations (owner-only for now — see contract-level @dev note) ---
+    constructor(address governance_) {
+        if (governance_ == address(0)) revert ZeroGovernanceAddress();
+        governance = governance_;
+    }
+
+    // --- Mutations (governance-gated — see contract-level @dev note) ---
 
     function setSubjectAttributes(
         address subject,
@@ -98,7 +113,7 @@ contract AttributeRegistry is Ownable {
         uint8 clearance,
         Department department,
         uint8 deviceTrustScore
-    ) external onlyOwner {
+    ) external onlyGovernance {
         if (clearance > 4) revert ClearanceOutOfRange(clearance);
         if (deviceTrustScore > 100) revert TrustScoreOutOfRange(deviceTrustScore);
 
@@ -118,7 +133,7 @@ contract AttributeRegistry is Ownable {
         uint8 classification,
         Department ownerDepartment,
         ResourceType resourceType
-    ) external onlyOwner {
+    ) external onlyGovernance {
         if (classification > 4) revert ClassificationOutOfRange(classification);
 
         resources[resourceId] = ResourceAttributes({

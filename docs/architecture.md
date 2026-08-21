@@ -9,12 +9,16 @@ without polling. Attributes are only ever mutated via the GovernanceVoting contr
 no direct "admin sets attribute" path.
 
 ### GovernanceVoting (smart contract)
-Implements a **propose → vote → execute** pattern. Any authorized governor can propose an
-attribute or policy change; the change only executes once **k of n** governors have approved
-it. This is the mechanism that removes the single-admin trust bottleneck — compromising one
-governor's key is not sufficient to alter access policy.
+Implements a **propose → vote → execute** pattern, generalized as a k-of-n proposal executor:
+a proposal is `(target address, calldata bytes)`; once `threshold` governors approve, anyone
+can call `execute()`, which performs `target.call(data)`. This single mechanism secures
+attribute changes (targeting `AttributeRegistry`), policy updates (targeting
+`PolicyRegistry`), and the governor set itself (a proposal can target `GovernanceVoting`'s own
+`addGovernor`/`removeGovernor` — this is what makes the governor set self-amending without a
+separate privileged admin). This is the mechanism that removes the single-admin trust
+bottleneck — compromising one governor's key is not sufficient to alter access policy.
 
-### PolicyRegistry (smart contract, arriving Week 3)
+### PolicyRegistry (smart contract)
 Stores a hash + URI pointer for the currently active off-chain policy rule set (see
 `docs/abac-model.md` §6 for the full rationale). Updating the active policy requires the same
 k-of-n governance approval as attribute mutation — the rules live off-chain for gas-cost

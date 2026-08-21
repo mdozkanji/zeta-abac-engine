@@ -118,3 +118,56 @@ Running log of what was built, what was learned, and what's next — updated eve
 - `PolicyRegistry.sol`: hash + URI anchor for the off-chain policy rule set, same governance
   gating.
 - Adversarial tests: a single governor acting alone must never succeed in forcing a change.
+
+---
+
+## Week 3 — Governance & Real Access Control (2026-08-20)
+
+### Built
+- `contracts/GovernanceVoting.sol`: generic k-of-n proposal executor. A proposal is
+  `(target, calldata)`; once `threshold` governors approve, `execute()` performs
+  `target.call(data)`. One mechanism secures attribute changes, policy updates, AND the
+  governor set itself (self-amending via proposals targeting the contract's own
+  `addGovernor`/`removeGovernor`) — no separate privileged admin anywhere.
+- **Rewired `AttributeRegistry.sol`**: removed `Ownable`/`onlyOwner` entirely. Access is now
+  gated by an immutable `governance` address set at deployment, expected to be a
+  `GovernanceVoting` contract. This is Week 2's explicitly-flagged placeholder now replaced
+  with the project's actual core security property.
+- `contracts/PolicyRegistry.sol`: hash + URI anchor for the off-chain policy rule set,
+  governance-gated the same way.
+- Decided: governor set (n) is self-amending via k-of-n vote; threshold (k=3) is fixed at
+  deployment, deliberately not amendable yet (flagged as a documented future extension rather
+  than allowing the self-amending mechanism to silently lower its own bar).
+- Full rewrite of `test/AttributeRegistry.test.ts` for the new access-control model. New
+  `test/GovernanceVoting.test.ts` (happy path, adversarial single-governor tests,
+  self-amending governor add/remove, threshold-floor protection). New
+  `test/Integration.test.ts` wiring the real `GovernanceVoting` + `AttributeRegistry` together
+  end-to-end. New `test/PolicyRegistry.test.ts`.
+
+### Learned
+- **The core multisig pattern**: `propose(target, data) → approve × k → execute()` calling
+  `target.call(data)` is the same conceptual design used by production tools like Gnosis
+  Safe — recognizing this pattern is broadly transferable, not specific to this project.
+- **Effects-before-interaction ordering**: `execute()` marks a proposal `executed = true`
+  *before* making the external `target.call(data)` — standard reentrancy-safety practice, even
+  though this project's threat model treats proposal targets as known/trusted contracts.
+- **A real bug caught before shipping**: an early draft of the "cannot drop governors below
+  threshold" test only collected 2 of 3 required approvals, so `execute()` would have failed
+  with `ThresholdNotMet` — the wrong reason — instead of exercising the actual
+  `CannotDropBelowThreshold` code path. Traced through the approval count by hand and fixed it
+  before running anything. This is a generally useful habit for any access-control test: always
+  verify you're testing the failure you think you're testing, not an earlier, unrelated one.
+- **A genuine open design question surfaced by testing, not by design review**: nothing stops
+  a governor from voting on a proposal to remove themselves. Documented in
+  `docs/threat-model.md` as an explicit open question rather than silently resolved either way.
+- Testing an access-control contract benefits from two layers: unit-test each contract in
+  isolation (using a plain EOA as a stand-in for "governance" or "target") to isolate its own
+  logic, *then* a smaller integration suite wiring the real contracts together to prove the
+  end-to-end claim. Caught nothing extra here, but it's the right structure going forward.
+
+### Next (Week 4)
+- Static analysis (Slither) across all three contracts.
+- Gas optimization pass.
+- Deploy to Sepolia testnet; write `DEPLOYMENT.md`.
+- Decide (and document) the self-removal-voting question flagged in the threat model before
+  or during hardening — worth resolving with intent rather than carrying it further unaddressed.
