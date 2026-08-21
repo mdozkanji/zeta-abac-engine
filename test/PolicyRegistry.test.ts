@@ -44,9 +44,17 @@ describe("PolicyRegistry", function () {
       // would emit keeps off-chain indexers (the PDP's policy sync, arriving Week 5/6) able
       // to rely on a single event type for "what is the current policy," rather than needing
       // separate handling for "initial" vs. "updated" policy state.
+      //
+      // Note: the emit matcher's target must be a deployed contract INSTANCE (so it can bind
+      // the address and parse logs from the receipt), not the ContractFactory itself — passing
+      // the factory directly produced an opaque "expected 32 bytes" error from deep in the
+      // provider layer the first time this was written. Deploy first, then assert against the
+      // resulting instance's deploymentTransaction().
       const Registry = await ethers.getContractFactory("PolicyRegistry");
-      await expect(Registry.deploy(governance.address, initialHash, initialURI))
-        .to.emit(Registry, "PolicyUpdated")
+      const deployed = await Registry.deploy(governance.address, initialHash, initialURI);
+
+      await expect(deployed.deploymentTransaction())
+        .to.emit(deployed, "PolicyUpdated")
         .withArgs(initialHash, initialURI, 1);
     });
   });
