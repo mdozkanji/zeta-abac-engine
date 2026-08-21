@@ -46,12 +46,13 @@ single-signer attempting to force execution always fails with `ThresholdNotMet`,
 governor calling `AttributeRegistry` directly (bypassing governance entirely) always fails
 with `NotGovernance`.
 
-**Open design question found during Week 3 testing:** the current implementation does not
-prevent a governor from voting on a proposal to remove *themselves* from the governor set.
-Real-world multisig systems vary on this — some disallow self-removal votes, others allow it
-since the remaining threshold check still provides a safety floor. Left as-is for now (the
-`CannotDropBelowThreshold` check still prevents the governor set from shrinking past `k`
-regardless of who votes), but flagged here rather than silently assumed correct.
+**Decision (Week 4):** leave as-is — a governor may vote on their own removal. Rationale: the
+`CannotDropBelowThreshold` check is the actual safety mechanism (it guarantees quorum
+capability is preserved regardless of who votes for what), and this matches established
+practice in production multisig systems like Gnosis Safe, which also don't restrict
+self-removal votes. Restricting it would add complexity without closing a real gap — a
+governor who wants to leave and has already been outvoted 2-of-3 by others is not meaningfully
+more dangerous than one who was removed unanimously.
 
 ### 6. Smart contract-specific attacks (reentrancy, integer issues, access-control bugs)
 **Goal:** exploit implementation bugs in the contracts themselves, independent of the

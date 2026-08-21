@@ -20,6 +20,7 @@
     "@nomicfoundation/hardhat-toolbox": "^4.0.0",
     "@openzeppelin/contracts": "^4.9.6",
     "@types/node": "^26.2.0",
+    "dotenv": "^17.4.2",
     "hardhat": "^2.29.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"

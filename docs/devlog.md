@@ -171,3 +171,46 @@ Running log of what was built, what was learned, and what's next — updated eve
 - Deploy to Sepolia testnet; write `DEPLOYMENT.md`.
 - Decide (and document) the self-removal-voting question flagged in the threat model before
   or during hardening — worth resolving with intent rather than carrying it further unaddressed.
+
+---
+
+## Week 4 — Security Review Tooling & Testnet Deployment Setup (2026-08-20)
+
+### Built
+- **Resolved the self-removal-voting question** from Week 3: decided to leave it as-is — the
+  `CannotDropBelowThreshold` check is the real safety mechanism, and this matches established
+  practice in production multisig systems (Gnosis Safe doesn't restrict self-removal votes
+  either). Documented in `docs/threat-model.md` with rationale, not left dangling.
+- `docs/security-review.md`: Slither setup instructions, a severity-tier interpretation
+  guide, and — written *before* running Slither — a list of findings we already expect and
+  why (the `GovernanceVoting.execute()` low-level `.call()` to an arbitrary target is
+  intentional and central to the design, not an oversight).
+- Gas reporter wired into `hardhat.config.ts` (`REPORT_GAS=true npx hardhat test`).
+- Sepolia network + Etherscan verification config in `hardhat.config.ts`, loaded via
+  `dotenv`. `.env.example` documents required variables without ever containing real values.
+- `scripts/generate-governors.ts`: generates 3 throwaway wallets for the testnet governor set.
+- `scripts/deploy.ts`: deploys all three contracts in dependency order, writes
+  `deployments/sepolia.json` (safe to commit — addresses are public regardless), prints
+  ready-to-run `hardhat verify` commands.
+- `DEPLOYMENT.md`: full walkthrough.
+- **Deliberate scope decision**: Sepolia governor set is 3 wallets, k=2 — not the k=3-of-5
+  used in local Hardhat tests. Real multi-party governance without needing to fund 5 separate
+  testnet wallets; a documented, intentional simplification for the deployment demo, not the
+  "real" security configuration.
+
+### Learned / noted
+- This week's split of labor is different from previous weeks: Slither, funding testnet
+  wallets, and actually submitting a deployment transaction are all things that genuinely
+  require the developer's own machine/accounts/funds — not just verification of something
+  already run in the build sandbox. Worth naming that distinction explicitly rather than
+  blurring "I wrote code" and "this was executed" together.
+- Deployer key (pays gas to deploy) and governor keys (vote on proposals after deployment)
+  are deliberately different roles/wallets — mirrors the actual design principle (no single
+  account should hold multiple kinds of authority) even down to the tooling/testing setup.
+
+### Next (pending Mofeed's local run)
+- Run Slither, review findings together against the "expected findings" list in
+  `docs/security-review.md`.
+- Run the gas report, note any surprisingly expensive operations.
+- Actually deploy to Sepolia and verify on Etherscan.
+- Once deployment is confirmed: Week 5 — PDP service skeleton, on-chain attribute sync.
