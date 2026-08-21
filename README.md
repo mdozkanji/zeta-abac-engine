@@ -35,6 +35,7 @@ Threat model: [`docs/threat-model.md`](docs/threat-model.md)
 ABAC model & policy format: [`docs/abac-model.md`](docs/abac-model.md)
 Security review (Slither + gas reporting): [`docs/security-review.md`](docs/security-review.md)
 Sepolia deployment guide: [`DEPLOYMENT.md`](DEPLOYMENT.md)
+PDP service (off-chain): [`services/pdp/`](services/pdp/)
 
 ## Live deployment (Sepolia testnet)
 
@@ -65,7 +66,7 @@ for a running log of what was built, what was learned, and what's next.
 | 2 | ✅ Attribute registry smart contract + unit tests |
 | 3 | ✅ k-of-n governance voting contract |
 | 4 | ✅ Security hardening + Sepolia testnet deployment |
-| 5 | PDP service skeleton + on-chain attribute sync |
+| 5 | ✅ PDP service skeleton + on-chain attribute sync |
 | 6 | Policy evaluation engine + tamper-evident audit log |
 | 7 | PEP middleware + end-to-end demo app |
 | 8 | Testing, benchmarks, documentation, v1.0 |

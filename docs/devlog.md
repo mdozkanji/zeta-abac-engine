@@ -324,3 +324,71 @@ All three contracts live on Sepolia:
 - PDP service skeleton (Node/TypeScript).
 - On-chain attribute sync via ethers.js, listening to `AttributeRegistry`'s events.
 - Redis-backed attribute cache.
+
+---
+
+## Week 5 — PDP Service Skeleton (2026-08-21)
+
+### A different kind of week
+Unlike every contract week so far, this one needed no Solidity compiler — plain Node/
+TypeScript, npm packages, Jest. That meant the build sandbox this project has been developed
+in could actually **install dependencies, write the code, and run the real test suite**
+directly, rather than writing code that could only be verified on Mofeed's machine. First
+week where "I built this" and "I verified this" both genuinely happened in the same place.
+
+### Built
+- New `services/pdp/` package (separate `package.json`/`tsconfig.json` from the root Hardhat
+  project — a real off-chain service, not a Hardhat script).
+- `abis/` directory: shared, clean ABI exports consumed by any off-chain service, decoupled
+  from Hardhat's internal `artifacts/` structure. `scripts/export-abis.ts` regenerates these
+  from real compiler output — the `AttributeRegistry.json` committed this week was
+  hand-authored (matching the Solidity source carefully) since this sandbox still can't run
+  `solc`; **running `export-abis.ts` after the next real compile is the way to get the
+  actual, trustworthy version** rather than continuing to trust the hand-written one.
+- `src/types.ts`, `src/chain/decodeAttributes.ts` (pure decode functions), `src/cache/
+  attributeCache.ts` (Redis-backed, address-case-normalized), `src/chain/attributeSync.ts`
+  (event backfill + live subscription), `src/routes/app.ts` (Express: health check, debug
+  read endpoints, `/decide` stub), `src/config.ts` (validated env loading), `src/index.ts`
+  (thin real entrypoint — the one file genuinely untestable here, since it needs a live RPC +
+  Redis connection).
+- 27 tests across 6 suites, **all run and passing in this sandbox**: pure decode logic,
+  cache round-trips (including an explicit address-case-normalization test), sync handler
+  logic, a hand-rolled fake-contract test for the backfill/subscribe flow, config validation,
+  and Express endpoint tests via `supertest`.
+- `docker-compose.yml` for local Redis.
+- Full `npx tsc` build verified too (not just `--noEmit`) — including confirming the
+  cross-package `../../../abis/AttributeRegistry.json` import resolves correctly at both
+  `src/` and compiled `dist/` locations, since `outDir` mirrors `src`'s nesting depth exactly.
+
+### Bug caught before it mattered
+- **A real `.gitignore` bug, self-inflicted and self-caught**: the root `.gitignore`'s
+  `cache/` pattern (meant only for Hardhat's build cache) was unanchored, so it matched *any*
+  directory named `cache` at any depth — including the brand new `services/pdp/src/cache/`
+  source folder. `git check-ignore -v` confirmed `attributeCache.ts` would have been silently
+  excluded from every future commit. Fixed by anchoring the Hardhat-specific patterns
+  (`/artifacts/`, `/cache/`, `/typechain-types/`) to the repo root with a leading slash, so
+  they only match the actual Hardhat build output, not legitimately-named subdirectories
+  elsewhere in the monorepo. **General lesson**: gitignore patterns without a leading slash
+  match at any depth — worth double-checking with `git check-ignore -v <path>` any time a
+  gitignore pattern's name might plausibly collide with a real source directory name,
+  especially in a monorepo with multiple packages.
+
+### Design decisions worth naming
+- Dependency injection throughout (`AttributeCache`, `AttributeSync`, `createApp` all take
+  their dependencies as constructor/factory arguments rather than constructing them
+  internally) — this is *why* 5 of 6 source files could be unit-tested without any live
+  infrastructure. `index.ts` stayed intentionally thin specifically so it could be the one
+  file that isn't unit-tested, without that gap spreading into the rest of the service.
+  General pattern worth carrying into the policy engine next week.
+- Backfill-before-subscribe ordering in `syncFromChain`, with a written rationale for why
+  (avoiding a double-processing race, even though cache writes being idempotent makes it
+  low-stakes either way) rather than an arbitrary ordering choice.
+
+### Next (Week 6)
+- Real ABAC policy evaluation engine, implementing the JSON rule format from
+  `docs/abac-model.md` §3 (comparisons, boolean logic, cross-attribute references).
+- Deny-overrides combining algorithm (§5) as directly testable behavior.
+- Decision logging + audit-log hash anchoring groundwork (`PolicyRegistry`/`AuditAnchor`
+  integration).
+- `/decide` replaces its stub with real evaluation against the cached attributes this week's
+  sync pipeline now correctly populates.

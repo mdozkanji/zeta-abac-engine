@@ -1,0 +1,9 @@
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    # No persistence volume configured — this is intentionally ephemeral for local
+    # development. The PDP's cache is fully rebuildable from on-chain events via
+    # AttributeSync.syncFromChain() at startup, so losing cache contents on restart is a
+    # non-issue by design, not an oversight.

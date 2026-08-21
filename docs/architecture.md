@@ -40,6 +40,10 @@ The actual "brain." Given an access request (subject, action, resource, context)
 3. Returns allow/deny.
 4. Logs the decision for later audit anchoring.
 
+**Implementation (Week 5):** see `services/pdp/`. The chain-sync-to-cache pipeline and HTTP
+API skeleton are built and tested; `/decide` is currently a labeled stub returning a fixed
+"allow" — real policy evaluation (step 2 above) arrives in Week 6.
+
 ### PEP — Policy Enforcement Point (middleware, deployed alongside protected apps)
 Sits in front of a protected resource/application. Intercepts requests, calls the PDP, and
 enforces its decision (lets the request through or rejects it). The PEP trusts the PDP's

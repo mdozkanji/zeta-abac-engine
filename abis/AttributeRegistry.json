@@ -1,0 +1,108 @@
+[
+  {
+    "type": "constructor",
+    "inputs": [{ "name": "governance_", "type": "address", "internalType": "address" }],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "governance",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "setSubjectAttributes",
+    "inputs": [
+      { "name": "subject", "type": "address", "internalType": "address" },
+      { "name": "role", "type": "uint8", "internalType": "enum AttributeRegistry.Role" },
+      { "name": "clearance", "type": "uint8", "internalType": "uint8" },
+      { "name": "department", "type": "uint8", "internalType": "enum AttributeRegistry.Department" },
+      { "name": "deviceTrustScore", "type": "uint8", "internalType": "uint8" }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setResourceAttributes",
+    "inputs": [
+      { "name": "resourceId", "type": "bytes32", "internalType": "bytes32" },
+      { "name": "classification", "type": "uint8", "internalType": "uint8" },
+      { "name": "ownerDepartment", "type": "uint8", "internalType": "enum AttributeRegistry.Department" },
+      { "name": "resourceType", "type": "uint8", "internalType": "enum AttributeRegistry.ResourceType" }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "getSubjectAttributes",
+    "inputs": [{ "name": "subject", "type": "address", "internalType": "address" }],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct AttributeRegistry.SubjectAttributes",
+        "components": [
+          { "name": "role", "type": "uint8", "internalType": "enum AttributeRegistry.Role" },
+          { "name": "clearance", "type": "uint8", "internalType": "uint8" },
+          { "name": "department", "type": "uint8", "internalType": "enum AttributeRegistry.Department" },
+          { "name": "deviceTrustScore", "type": "uint8", "internalType": "uint8" },
+          { "name": "exists", "type": "bool", "internalType": "bool" }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getResourceAttributes",
+    "inputs": [{ "name": "resourceId", "type": "bytes32", "internalType": "bytes32" }],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct AttributeRegistry.ResourceAttributes",
+        "components": [
+          { "name": "classification", "type": "uint8", "internalType": "uint8" },
+          { "name": "ownerDepartment", "type": "uint8", "internalType": "enum AttributeRegistry.Department" },
+          { "name": "resourceType", "type": "uint8", "internalType": "enum AttributeRegistry.ResourceType" },
+          { "name": "exists", "type": "bool", "internalType": "bool" }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "event",
+    "name": "SubjectAttributesSet",
+    "inputs": [
+      { "name": "subject", "type": "address", "indexed": true, "internalType": "address" },
+      { "name": "role", "type": "uint8", "indexed": false, "internalType": "enum AttributeRegistry.Role" },
+      { "name": "clearance", "type": "uint8", "indexed": false, "internalType": "uint8" },
+      { "name": "department", "type": "uint8", "indexed": false, "internalType": "enum AttributeRegistry.Department" },
+      { "name": "deviceTrustScore", "type": "uint8", "indexed": false, "internalType": "uint8" }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ResourceAttributesSet",
+    "inputs": [
+      { "name": "resourceId", "type": "bytes32", "indexed": true, "internalType": "bytes32" },
+      { "name": "classification", "type": "uint8", "indexed": false, "internalType": "uint8" },
+      { "name": "ownerDepartment", "type": "uint8", "indexed": false, "internalType": "enum AttributeRegistry.Department" },
+      { "name": "resourceType", "type": "uint8", "indexed": false, "internalType": "enum AttributeRegistry.ResourceType" }
+    ],
+    "anonymous": false
+  },
+  { "type": "error", "name": "ClearanceOutOfRange", "inputs": [{ "name": "provided", "type": "uint8", "internalType": "uint8" }] },
+  { "type": "error", "name": "ClassificationOutOfRange", "inputs": [{ "name": "provided", "type": "uint8", "internalType": "uint8" }] },
+  { "type": "error", "name": "TrustScoreOutOfRange", "inputs": [{ "name": "provided", "type": "uint8", "internalType": "uint8" }] },
+  { "type": "error", "name": "SubjectNotFound", "inputs": [{ "name": "subject", "type": "address", "internalType": "address" }] },
+  { "type": "error", "name": "ResourceNotFound", "inputs": [{ "name": "resourceId", "type": "bytes32", "internalType": "bytes32" }] },
+  { "type": "error", "name": "NotGovernance", "inputs": [{ "name": "caller", "type": "address", "internalType": "address" }] },
+  { "type": "error", "name": "ZeroGovernanceAddress", "inputs": [] }
+]
