@@ -1,10 +1,11 @@
 # Dependencies
 node_modules/
 
-# Hardhat
-artifacts/
-cache/
-typechain-types/
+# Hardhat (root project only — leading slash anchors these to the repo root so they don't
+# accidentally match legitimately-named subdirectories elsewhere, like services/pdp/src/cache/)
+/artifacts/
+/cache/
+/typechain-types/
 
 # Env / secrets — NEVER commit real keys
 .env
@@ -21,6 +22,7 @@ typechain-types/
 
 # Build output
 dist/
+coverage/
 
 # OS/editor noise
 .DS_Store
