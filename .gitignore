@@ -10,6 +10,15 @@ typechain-types/
 .env
 .env.local
 
+# Safety net for accidentally-saved key material (e.g. output copied from
+# scripts/generate-governors.ts) — ideally such files live outside the repo entirely, but
+# this catches the common mistake of saving them alongside the project.
+*governor*.txt
+*governer*.txt
+*wallet*.txt
+*private*key*
+*secrets*.txt
+
 # Build output
 dist/
 
