@@ -251,3 +251,35 @@ Slither ran cleanly, found exactly 3 results:
 ### Next
 - Gas report (`REPORT_GAS=true npx hardhat test`).
 - Actual Sepolia deployment + Etherscan verification.
+
+---
+
+## Week 4 (cont.) — Confirmed: 40/40 passing, Slither down to 2 accepted findings (2026-08-20)
+
+### Confirmed
+- `npx hardhat test` after the fixes: **40/40 passing**, no regressions from the event-order
+  change.
+- `python3 -m slither .`: **2 results** (down from 3) — `reentrancy-events` resolved as
+  expected; `costly-loop` and `low-level-calls` remain, both previously accepted/documented.
+- The `dotenv.config({ quiet: true })` fix worked — no more "Problem deserializing hardhat
+  configuration" noise in Slither's output.
+
+### Gas report findings
+- `propose()`: avg ~215k gas (up to ~324k) — by far the most expensive call.
+- `approve()`: avg ~58k gas.
+- `execute()`: avg ~84k gas (naturally varies with what the target call itself costs).
+- `updatePolicy()`: avg ~41k gas.
+- **Why `propose()` costs so much more**: it's the only function writing variable-length data
+  (`bytes calldata data`, `string description`) into contract storage. Storage writes for
+  variable-length data are the most expensive EVM operation type, scaling with size —
+  `approve()` by contrast just flips a boolean and increments a counter, both fixed-size, cheap
+  writes. General intuition worth keeping: transaction cost is dominated by how much *new
+  storage* is touched, not by how much "logic" runs.
+- No immediate optimization action taken — these numbers are reasonable for what each function
+  does, and premature gas-golfing before the design is even deployed once would be optimizing
+  the wrong thing at the wrong time. Worth flagging as an explicit "measured, understood, not
+  changed" decision rather than silently skipping this trade-off entirely.
+
+### Next
+- Actual Sepolia deployment (wallet funding, `scripts/deploy.ts`, Etherscan verification) —
+  the one remaining piece of Week 4.
