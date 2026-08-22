@@ -37,37 +37,58 @@ export class AttributeSync {
    * at service startup — without this, a freshly started PDP would have an empty cache until
    * the next attribute change happened to occur, incorrectly treating every existing subject/
    * resource as unregistered in the meantime.
+   *
+   * Queries are chunked into ranges of at most `chunkSize` blocks. This isn't optional
+   * polish: most RPC providers (including the public Sepolia endpoint this project defaults
+   * to) reject `eth_getLogs` requests spanning more than some maximum block range — a single
+   * unchunked "block 0 to latest" query fails outright once the chain has grown past that
+   * limit, which happens well within a testnet's normal lifetime. 40,000 is a conservative
+   * default safely under the 50,000-block limit this project's default RPC actually enforces
+   * (different providers set different limits, hence this being configurable).
    */
-  async syncFromChain(registry: Contract, fromBlock: number = 0): Promise<void> {
-    const subjectEvents = await registry.queryFilter(
-      registry.filters.SubjectAttributesSet(),
-      fromBlock
-    );
-    for (const event of subjectEvents) {
-      if (!("args" in event) || !event.args) continue;
-      const [subject, role, clearance, department, deviceTrustScore] = event.args;
-      await this.handleSubjectAttributesSet(
-        subject,
-        Number(role),
-        Number(clearance),
-        Number(department),
-        Number(deviceTrustScore)
-      );
-    }
+  async syncFromChain(
+    registry: Contract,
+    provider: { getBlockNumber(): Promise<number> },
+    fromBlock: number = 0,
+    chunkSize: number = 40000
+  ): Promise<void> {
+    const latestBlock = await provider.getBlockNumber();
 
-    const resourceEvents = await registry.queryFilter(
-      registry.filters.ResourceAttributesSet(),
-      fromBlock
-    );
-    for (const event of resourceEvents) {
-      if (!("args" in event) || !event.args) continue;
-      const [resourceId, classification, ownerDepartment, resourceType] = event.args;
-      await this.handleResourceAttributesSet(
-        resourceId,
-        Number(classification),
-        Number(ownerDepartment),
-        Number(resourceType)
+    for (let start = fromBlock; start <= latestBlock; start += chunkSize) {
+      const end = Math.min(start + chunkSize - 1, latestBlock);
+
+      const subjectEvents = await registry.queryFilter(
+        registry.filters.SubjectAttributesSet(),
+        start,
+        end
       );
+      for (const event of subjectEvents) {
+        if (!("args" in event) || !event.args) continue;
+        const [subject, role, clearance, department, deviceTrustScore] = event.args;
+        await this.handleSubjectAttributesSet(
+          subject,
+          Number(role),
+          Number(clearance),
+          Number(department),
+          Number(deviceTrustScore)
+        );
+      }
+
+      const resourceEvents = await registry.queryFilter(
+        registry.filters.ResourceAttributesSet(),
+        start,
+        end
+      );
+      for (const event of resourceEvents) {
+        if (!("args" in event) || !event.args) continue;
+        const [resourceId, classification, ownerDepartment, resourceType] = event.args;
+        await this.handleResourceAttributesSet(
+          resourceId,
+          Number(classification),
+          Number(ownerDepartment),
+          Number(resourceType)
+        );
+      }
     }
 
     // Subscribe to future events after backfilling past ones — ordering matters here: if we

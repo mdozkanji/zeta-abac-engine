@@ -4,6 +4,7 @@ export interface Config {
   rpcUrl: string;
   attributeRegistryAddress: string;
   syncFromBlock: number;
+  syncChunkSize: number;
 }
 
 /**
@@ -29,5 +30,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     rpcUrl,
     attributeRegistryAddress,
     syncFromBlock: env.SYNC_FROM_BLOCK ? Number(env.SYNC_FROM_BLOCK) : 0,
+    syncChunkSize: env.SYNC_CHUNK_SIZE ? Number(env.SYNC_CHUNK_SIZE) : 40000,
   };
 }

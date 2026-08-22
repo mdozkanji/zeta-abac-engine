@@ -392,3 +392,53 @@ week where "I built this" and "I verified this" both genuinely happened in the s
   integration).
 - `/decide` replaces its stub with real evaluation against the cached attributes this week's
   sync pipeline now correctly populates.
+
+---
+
+## Week 5 (cont.) — First Live Run, Real RPC Bug Found and Fixed (2026-08-21)
+
+### What happened
+First real `npm run dev` against Sepolia's public RPC (`https://ethereum-sepolia-rpc.
+publicnode.com`) failed immediately: `exceed maximum block range: 50000`. The original
+`syncFromChain` requested the entire chain history (block 0 to latest) in a single
+`eth_getLogs` call — a request pattern that works fine against a local Hardhat network (which
+has no such limit) but fails against most real RPC providers, which cap how many blocks a
+single log query can span. This only surfaces once there's a real chain with real history to
+query against — exactly the kind of gap that unit tests against a fully-controlled fake
+wouldn't have caught, since the original fake registry had no concept of block-range limits
+at all.
+
+### Fixed
+- `AttributeSync.syncFromChain` now takes a `provider` (for `getBlockNumber()`) and a
+  `chunkSize` parameter, splitting the backfill into successive ranges of at most `chunkSize`
+  blocks rather than one unbounded query. Default 40000, safely under the 50000 limit
+  actually observed; configurable via `SYNC_CHUNK_SIZE` since different providers set
+  different limits.
+- Added `SYNC_CHUNK_SIZE` to `config.ts`/`.env.example`.
+- Rewrote `test/attributeSync.syncFromChain.test.ts`: the fake registry's `queryFilter` now
+  records the actual `(filter, fromBlock, toBlock)` of every call, and new tests assert the
+  chunking behavior directly — a wide range splits into the expected number of chunks each
+  under the limit, a narrow range stays a single chunk, and events found across multiple
+  chunks all correctly land in the cache. 3 new tests, 30 total (up from 27).
+
+### Learned
+- **A real bug that only appeared once tested against real infrastructure** — this is
+  precisely why "all tests pass" and "verified against the real system" are different claims,
+  and why Week 5's live-run step (Redis + real Sepolia RPC) mattered even after the full unit
+  suite was already green in the sandbox. Mocks and fakes are only as good as the assumptions
+  baked into them; a fake with no concept of RPC provider limits can't catch a bug that only
+  exists because real RPC providers have limits.
+- RPC provider block-range limits for `eth_getLogs` are a common, provider-specific
+  constraint (this project's default public endpoint enforces 50000; others differ) — worth
+  recognizing as a standard thing to design around in any service that queries chain history,
+  not a one-off quirk of this particular RPC.
+
+### Confirmed
+- Redis running locally via native `apt install redis-server` (Docker Compose's `docker
+  compose` v2 syntax wasn't available in Mofeed's environment — native install sidestepped it
+  entirely and is arguably simpler for local dev anyway).
+- 2 of 3 Sepolia governor wallets funded, ready for Week 7's end-to-end governance demo.
+
+### Next (Week 6)
+- Real ABAC policy evaluation engine (unchanged from prior entry — this session was a
+  bugfix/hardening detour, not a scope change).

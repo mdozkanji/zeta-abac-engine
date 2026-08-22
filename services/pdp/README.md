@@ -23,6 +23,17 @@ AttributeRegistry (on-chain) --events--> AttributeSync --> AttributeCache (Redis
 - `src/config.ts` — validated environment loading
 - `src/index.ts` — real entrypoint wiring everything to a live RPC + Redis connection
 
+## A real bug this design had to handle: RPC block-range limits
+
+The first live run against Sepolia's public RPC failed with `exceed maximum block range:
+50000` — most RPC providers cap how many blocks a single `eth_getLogs` query can span, and
+the initial unchunked "block 0 to latest" backfill request exceeded it. `AttributeSync.
+syncFromChain` now chunks the backfill into ranges of at most `SYNC_CHUNK_SIZE` blocks
+(default 40000, configurable per-provider via `.env`). Set `SYNC_FROM_BLOCK` to the actual
+contract deployment block (visible on Etherscan) to additionally avoid scanning chain history
+before the contract existed — not required for correctness after the chunking fix, but a real
+efficiency win.
+
 Everything except `index.ts` is designed to be unit-testable without a live chain connection
 or Redis server — dependencies are passed in via constructors/factory functions rather than
 constructed internally, so tests can inject `ioredis-mock` and hand-rolled fake contract
@@ -52,9 +63,10 @@ npm run dev
 npm test
 ```
 
-27 tests across 6 suites, no live infrastructure required — Redis is mocked via
+30 tests across 6 suites, no live infrastructure required — Redis is mocked via
 `ioredis-mock`, and chain interaction is tested via a minimal hand-rolled fake implementing
-only the surface `AttributeSync` actually touches (`filters`, `queryFilter`, `on`).
+only the surface `AttributeSync` actually touches (`filters`, `queryFilter`, `on`), including
+dedicated regression tests for the chunked-backfill fix described below.
 
 ## Endpoints (Week 5)
 

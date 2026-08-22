@@ -28,8 +28,8 @@ async function main() {
   const registry = new Contract(config.attributeRegistryAddress, attributeRegistryAbi, provider);
 
   const sync = new AttributeSync(cache);
-  console.log(`Syncing AttributeRegistry (${config.attributeRegistryAddress}) from block ${config.syncFromBlock}...`);
-  await sync.syncFromChain(registry, config.syncFromBlock);
+  console.log(`Syncing AttributeRegistry (${config.attributeRegistryAddress}) from block ${config.syncFromBlock} in chunks of ${config.syncChunkSize}...`);
+  await sync.syncFromChain(registry, provider, config.syncFromBlock, config.syncChunkSize);
   console.log("Sync complete. Listening for new events.");
 
   const app = createApp(cache);
