@@ -442,3 +442,49 @@ at all.
 ### Next (Week 6)
 - Real ABAC policy evaluation engine (unchanged from prior entry — this session was a
   bugfix/hardening detour, not a scope change).
+
+---
+
+## Week 5 — Confirmed Fully Working End-to-End (2026-08-21)
+
+### One more real-infrastructure bug, found and fixed
+After the chunking fix, the next live run hit `pruned history unavailable` — the chunking
+itself worked correctly (confirmed: it requested a proper 40,000-block range), but that range
+started at block 0, and public RPC nodes typically don't retain full archive history that far
+back for free-tier access. Since the contract was deployed only ~1 day prior, this was always
+an unnecessary (and, it turned out, unavailable) query in the first place.
+
+**Fix**: found a real, safe `SYNC_FROM_BLOCK` value directly via RPC rather than continuing to
+hunt through the Etherscan UI (which didn't surface the contract-creation link easily this
+time): queried `eth_blockNumber` directly, subtracted a 100,000-block buffer (~1 week at
+Sepolia's ~12s block time — comfortably covers any deployment from the last several days
+without needing the exact block), and used that. Recorded as `SYNC_FROM_BLOCK=11445130` in
+`services/pdp/.env.example`, with the lookup method documented inline for reuse, and the value
++ its derivation recorded in `deployments/sepolia.json` for the record.
+
+### Confirmed working, live
+```
+Syncing AttributeRegistry (0x4004...) from block 11445130 in chunks of 40000...
+Sync complete. Listening for new events.
+PDP service listening on port 4000
+```
+`curl http://localhost:4000/health` → `{"status":"ok"}`. Full pipeline — real Sepolia RPC →
+chunked event backfill → Redis cache → Express API — confirmed working end-to-end, not just
+passing unit tests against fakes.
+
+### Learned
+- Two distinct RPC limitations surfaced in immediate succession (block-range limits, then
+  pruned-history limits) — both are standard characteristics of public/free RPC providers,
+  not bugs in this project's design. Worth having both patterns recognized generically:
+  **range limits** (how much can one query span) and **retention limits** (how far back does
+  the node keep data at all) are separate constraints that can each independently break a
+  naive "just query everything" approach.
+- A reliable, low-effort way to find a "good enough" starting block for a recent deployment
+  when the block explorer UI isn't cooperating: query current block height directly via RPC,
+  subtract a generous time-based buffer. Exactness isn't necessary for this use case — only
+  "safely before the real deployment, without wastefully scanning years of irrelevant/pruned
+  history."
+
+### Week 5 — genuinely complete
+Chain sync, cache, and HTTP API all verified working against real Sepolia infrastructure, not
+just the 30-test unit suite. Next: Week 6, the real policy evaluation engine.

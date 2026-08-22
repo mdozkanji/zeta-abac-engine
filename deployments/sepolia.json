@@ -1,6 +1,8 @@
 {
   "network": "sepolia",
   "deployedAt": "2026-08-20",
+  "approxDeploymentBlock": 11445130,
+  "approxDeploymentBlockNote": "Not the exact contract creation block — a safe lower-bound estimate (100,000 blocks before the block queried on 2026-08-21, comfortably before the actual deployment). Discovered via a direct eth_blockNumber RPC call after the Etherscan UI's contract-creation link wasn't found; see docs/devlog.md Week 5 for the method. Good enough for SYNC_FROM_BLOCK's purpose (skip pruned/irrelevant history) without needing exactness.",
   "deployer": "0x1277BB626e87f54e0C5Cd5B7FFAEd6C38DCe5f78",
   "governors": [
     "0x939e559C61b4c404011Ee9ae74029354F11A6Dce",
@@ -23,7 +25,7 @@
     "PolicyRegistry": "https://sepolia.etherscan.io/address/0x019BFB227c1c22A1ed44E5e7c597E46BfdFf0965#code"
   },
   "verified": {
-    "GovernanceVoting": false,
+    "GovernanceVoting": true,
     "AttributeRegistry": true,
     "PolicyRegistry": true
   }
